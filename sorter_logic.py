@@ -28,7 +28,7 @@ CONFIG_PATH = os.path.join(SCRIPT_DIR, "config.ini")
 MODEL_VARIANTS = {
     "low": {
         "label": "Low (4B)",
-        "desc": "~5.5GB VRAM | Less precise, Faster (~3.34 GB download)",
+        "desc": "5.5GB VRAM | Less precise, Faster (3.34 GB download)",
         "main": {
             "filename": "Qwen3VL-4B-Instruct-Q4_K_M.gguf",
             "url": "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3VL-4B-Instruct-Q4_K_M.gguf",
@@ -42,7 +42,7 @@ MODEL_VARIANTS = {
     },
     "medium": {
         "label": "Medium (8B)",
-        "desc": "~12GB VRAM | Great quality, Balanced (~9.87 GB download)",
+        "desc": "12GB VRAM | Great quality, Balanced (9.87 GB download)",
         "main": {
             "filename": "Qwen3VL-8B-Instruct-Q8_0.gguf",
             "url": "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/Qwen3VL-8B-Instruct-Q8_0.gguf",
@@ -56,7 +56,7 @@ MODEL_VARIANTS = {
     },
     "high": {
         "label": "High (30B)",
-        "desc": "~33GB VRAM | Best quality, Slowest (~33.58 GB download)",
+        "desc": "33GB VRAM | Best quality, Slowest (33.58 GB download)",
         "main": {
             "filename": "Qwen3VL-30B-A3B-Instruct-Q8_0.gguf",
             "url": "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/Qwen3VL-30B-A3B-Instruct-Q8_0.gguf",

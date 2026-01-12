@@ -21,85 +21,6 @@ os.environ["GRADIO_TEMP_DIR"] = temp_path
 import gradio as gr
 import sorter_logic as logic
 
-# -------------------- STYLES --------------------
-
-css = """
-.gradio-container { min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
-
-/* HEADER STYLES */
-.header-container {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
-    padding: 2rem; 
-    border-radius: 12px; 
-    text-align: center; 
-    margin-bottom: 1.5rem; 
-    border: 1px solid #334155; 
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-.header-title {
-    color: white; 
-    font-size: 3.5rem; 
-    font-weight: 800; 
-    margin: 0; 
-    line-height: 1.2;
-    letter-spacing: -0.025em;
-}
-.header-subtitle {
-    color: #94a3b8; 
-    font-size: 1.2rem; 
-    margin-top: 0.5rem;
-    font-weight: 500;
-}
-
-/* BOX STYLES */
-.folder-box { padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
-.dark .folder-box { border-color: #374151; background: #1f2937; }
-
-.log-box { background: #1e293b; color: #bef264; font-family: monospace; padding: 10px; border-radius: 8px; height: 400px; overflow-y: auto; border: 1px solid #334155; }
-.dl-log-box { background: #1e293b; color: #60a5fa; font-family: monospace; padding: 10px; border-radius: 8px; height: 300px; overflow-y: auto; border: 1px solid #334155; }
-
-/* DL CARD STYLE */
-.dl-card {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-    background: white;
-}
-.dl-title { font-weight: bold; font-size: 1.1em; margin-bottom: 4px; }
-.dl-desc { color: #64748b; font-size: 0.9em; margin-bottom: 8px; }
-.dl-status-ok { color: #10b981; font-weight: bold; }
-.dl-status-miss { color: #ef4444; font-weight: bold; }
-
-/* Search Result Styles */
-.search-result-item {
-    display: flex;
-    align-items: center;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.search-thumb {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 6px;
-    margin-right: 15px;
-    border: 1px solid #cbd5e1;
-    flex-shrink: 0;
-}
-.search-path { font-family: monospace; color: #334155; word-break: break-all; font-size: 0.9rem; }
-
-/* Buttons */
-#run_btn { background: linear-gradient(90deg, #10b981 0%, #059669 100%); color: white; border: none; }
-#stop_btn { background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%); color: white; border: none; }
-.dl-btn { background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; }
-.del-btn { background-color: #fecaca; color: #b91c1c; border: 1px solid #fca5a5; }
-"""
-
 # -------------------- UI HELPERS --------------------
 
 def open_folder_dialog(current):
@@ -170,9 +91,9 @@ def wrapper_run_sort(folder, *args, progress=gr.Progress()):
 
 def format_search_results(image_paths):
     if not image_paths:
-        return "<div>No matches found yet...</div>"
+        return "<div style='padding: 20px; text-align: center; color: var(--body-text-color-subdued);'>No matches found yet...</div>"
     
-    html = "<div>"
+    html = "<div style='display: flex; flex-direction: column; gap: 10px;'>"
     for path in reversed(image_paths):
         try:
             with open(path, "rb") as f:
@@ -180,9 +101,9 @@ def format_search_results(image_paths):
             src = f"data:image/jpeg;base64,{b64}"
             
             html += f"""
-            <div class="search-result-item">
-                <img src="{src}" class="search-thumb" />
-                <span class="search-path">{path}</span>
+            <div style="display: flex; align-items: center; padding: 12px; border: 1px solid var(--border-color-primary); border-radius: 8px; background: var(--background-fill-secondary);">
+                <img src="{src}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 15px; flex-shrink: 0;" />
+                <span style="font-family: monospace; word-break: break-all; font-size: 0.85rem; color: var(--body-text-color);">{path}</span>
             </div>
             """
         except Exception:
@@ -231,10 +152,8 @@ def wrapper_run_download(key):
     data = logic.MODEL_VARIANTS[key]
     yield f"Starting download for: {data['label']}...\n"
     
-    # Call with args: output_dir variant_key
     cmd = [sys.executable, downloader_script, models_dir, key]
     
-    # FIX: Pass cwd=current_dir to ensure the subprocess finds sorter_logic.py
     process = subprocess.Popen(
         cmd, 
         stdout=subprocess.PIPE, 
@@ -266,10 +185,8 @@ def wrapper_run_download(key):
                     full_log += f"[ERROR] {m_data}\n"
                     yield full_log
                 elif m_type == "done":
-                    # Check if successful
                     if str(m_data).startswith("SUCCESS|"):
                         downloaded_key = m_data.split("|")[1]
-                        # Update Config
                         d_info = logic.MODEL_VARIANTS[downloaded_key]
                         logic.save_config(
                             os.path.join(logic.MODELS_DIR, d_info["main"]["filename"]),
@@ -292,159 +209,226 @@ def wrapper_run_download(key):
 
 MAX_CATS = 100
 
-with gr.Blocks(css=css, title="Image Sorter") as app:
+# Use Soft theme - clean and modern looking for Gradio 6
+theme = gr.themes.Soft(
+    primary_hue="indigo",
+    secondary_hue="slate",
+    neutral_hue="slate",
+)
+
+with gr.Blocks(title="Image Sorter") as app:
     
-    # Custom Header Banner
-    gr.HTML("""
-        <div class="header-container">
-            <h1 class="header-title">Image Sorter</h1>
-            <div class="header-subtitle">Local Vision Model Sorter & Searcher</div>
-        </div>
-    """)
+    # Header
+    gr.Markdown("# 🖼️ Image Sorter")
+    gr.Markdown("*Local Vision Model Sorter & Searcher*")
     
     with gr.Tabs():
         
         # ================= TAB 1: SORTER =================
-        with gr.TabItem("Sorter", id="tab_sort"):
-            with gr.Row():
+        with gr.TabItem("🗂️ Sorter"):
+            with gr.Row(equal_height=False):
                 # LEFT: Config
-                with gr.Column(scale=1, min_width=300):
-                    with gr.Group(elem_classes="folder-box"):
-                        gr.Markdown("### 1. Source")
-                        folder_path = gr.Textbox(label="Image Folder", placeholder="C:\\Images\\Unsorted")
+                with gr.Column(scale=1, min_width=350):
+                    with gr.Group():
+                        gr.Markdown("### 📁 1. Source Folder")
+                        folder_path = gr.Textbox(
+                            label="Image Folder", 
+                            placeholder="C:\\Images\\Unsorted",
+                            show_label=False
+                        )
                         with gr.Row():
-                            btn_browse = gr.Button("📂 Browse", size="sm")
+                            btn_browse = gr.Button("📂 Browse", size="sm", variant="secondary")
                             btn_scan = gr.Button("🔄 Scan", size="sm", variant="secondary")
                         file_count_md = gr.Markdown("No folder selected.")
                     
-                    gr.Markdown("### 2. Rules")
-                    n_folders = gr.Slider(1, 100, value=3, step=1, label="Number of Categories")
-                    
-                    rule_names = []
-                    rule_prompts = []
-                    rules_container = gr.Group()
-                    with rules_container:
+                    with gr.Group():
+                        gr.Markdown("### 📋 2. Sorting Rules")
+                        
+                        # State to track number of visible categories
+                        n_folders = gr.State(value=3)
+                        
+                        with gr.Row():
+                            btn_remove_cat = gr.Button("➖ Remove", size="sm", variant="secondary", scale=1)
+                            category_count_display = gr.Markdown("**3** categories", elem_id="cat_count")
+                            btn_add_cat = gr.Button("➕ Add", size="sm", variant="secondary", scale=1)
+                        
+                        rule_names = []
+                        rule_prompts = []
                         for i in range(MAX_CATS):
                             with gr.Row(visible=(i < 3)) as r:
-                                r_n = gr.Textbox(value=f"folder_{i+1}", show_label=False, placeholder="Folder Name", scale=1, min_width=80)
-                                r_p = gr.Textbox(show_label=False, placeholder=f"Prompt (e.g. 'Cat')", scale=2)
+                                r_n = gr.Textbox(
+                                    value=f"folder_{i+1}", 
+                                    show_label=False, 
+                                    placeholder="Folder Name", 
+                                    scale=1, 
+                                    min_width=100
+                                )
+                                r_p = gr.Textbox(
+                                    show_label=False, 
+                                    placeholder=f"Prompt (e.g. 'Cat', 'Dog', 'Landscape')", 
+                                    scale=2
+                                )
                                 rule_names.append((r, r_n))
                                 rule_prompts.append(r_p)
-                    
-                    def update_rules(n):
-                        return [gr.update(visible=(i < n)) for i in range(MAX_CATS)]
-                    n_folders.change(update_rules, inputs=n_folders, outputs=[x[0] for x in rule_names])
+                        
+                        def add_category(n):
+                            new_n = min(n + 1, MAX_CATS)
+                            visibility = [gr.update(visible=(i < new_n)) for i in range(MAX_CATS)]
+                            return new_n, f"**{new_n}** categories", *visibility
+                        
+                        def remove_category(n):
+                            new_n = max(n - 1, 1)
+                            visibility = [gr.update(visible=(i < new_n)) for i in range(MAX_CATS)]
+                            return new_n, f"**{new_n}** categories", *visibility
+                        
+                        cat_outputs = [n_folders, category_count_display] + [x[0] for x in rule_names]
+                        btn_add_cat.click(add_category, inputs=n_folders, outputs=cat_outputs)
+                        btn_remove_cat.click(remove_category, inputs=n_folders, outputs=cat_outputs)
 
-                # RIGHT: Action
+                # RIGHT: Action & Preview
                 with gr.Column(scale=2):
                     with gr.Group():
-                        gr.Markdown("### 3. Preview")
-                        gallery = gr.Gallery(height="auto", columns=6, object_fit="cover", show_label=False)
+                        gr.Markdown("### 🖼️ 3. Image Preview")
+                        gallery = gr.Gallery(
+                            height=280, 
+                            columns=6, 
+                            rows=2,
+                            object_fit="cover", 
+                            show_label=False,
+                            preview=True
+                        )
                     
-                    gr.Markdown("### 4. Execution")
-                    with gr.Row():
-                        btn_run = gr.Button("▶ RUN SORTING", elem_id="run_btn", interactive=False)
-                        btn_stop = gr.Button("⏹ STOP", elem_id="stop_btn")
-                    
-                    log_output = gr.Textbox(
-                        label="Process Log", 
-                        elem_classes="log-box", 
-                        lines=15, 
-                        max_lines=15,
-                        value=logic.get_startup_message() 
-                    )
+                    with gr.Group():
+                        gr.Markdown("### ▶️ 4. Execution")
+                        with gr.Row():
+                            btn_run = gr.Button("▶ RUN SORTING", variant="primary", interactive=False, scale=2)
+                            btn_stop = gr.Button("⏹ STOP", variant="stop", scale=1)
+                        
+                        log_output = gr.Textbox(
+                            label="Process Log", 
+                            lines=12, 
+                            max_lines=12,
+                            value=logic.get_startup_message()
+                        )
 
         # ================= TAB 2: SEARCHER =================
-        with gr.TabItem("Searcher", id="tab_search"):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    gr.Markdown("### Search Config")
-                    with gr.Group(elem_classes="folder-box"):
-                        search_folder = gr.Textbox(label="Image Folder", placeholder="C:\\Images\\MyCollection")
-                        btn_browse_search = gr.Button("📂 Browse")
+        with gr.TabItem("🔍 Searcher"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=1, min_width=350):
+                    with gr.Group():
+                        gr.Markdown("### 📁 Search Folder")
+                        search_folder = gr.Textbox(
+                            label="Image Folder", 
+                            placeholder="C:\\Images\\MyCollection",
+                            show_label=False
+                        )
+                        btn_browse_search = gr.Button("📂 Browse", variant="secondary")
                     
-                    search_query = gr.Textbox(label="Search Prompt", placeholder="e.g. 'A photo of a red car'", lines=2)
-                    
-                    with gr.Row():
-                        btn_start_search = gr.Button("🔍 Start Search", variant="primary")
-                        btn_stop_search = gr.Button("⏹ Stop", variant="stop")
+                    with gr.Group():
+                        gr.Markdown("### 🔎 Search Query")
+                        search_query = gr.Textbox(
+                            label="Search Prompt", 
+                            placeholder="e.g. 'A photo of a red car'", 
+                            lines=3,
+                            show_label=False
+                        )
+                        
+                        with gr.Row():
+                            btn_start_search = gr.Button("🔍 Start Search", variant="primary", scale=2)
+                            btn_stop_search = gr.Button("⏹ Stop", variant="stop", scale=1)
 
                 with gr.Column(scale=2):
-                    gr.Markdown("### Results")
-                    search_results_html = gr.HTML(label="Found Images")
+                    with gr.Group():
+                        gr.Markdown("### 📋 Results")
+                        search_results_html = gr.HTML(
+                            value="<div style='padding: 20px; text-align: center; color: var(--body-text-color-subdued);'>Search results will appear here...</div>"
+                        )
 
         # ================= TAB 3: DOWNLOAD =================
-        with gr.TabItem("Download", id="tab_download"):
-            gr.Markdown("### Download Models")
+        with gr.TabItem("⬇️ Download"):
+            gr.Markdown("### 📦 Download Models")
             gr.Markdown("Select a quality level. Downloads are saved to `bin/models`.")
             
             # --- LOW ---
-            with gr.Group(elem_classes="dl-card"):
-                with gr.Row(elem_classes="dl-row"):
-                    with gr.Column(scale=4):
-                        gr.Markdown(f"<div class='dl-title'>{logic.MODEL_VARIANTS['low']['label']}</div><div class='dl-desc'>{logic.MODEL_VARIANTS['low']['desc']}</div>")
-                    with gr.Column(scale=2):
-                        stat_low = gr.Label(value=get_model_status_label("low"), show_label=False)
-                    with gr.Column(scale=1):
-                        btn_dl_low = gr.Button("⬇ Download", elem_classes="dl-btn", size="sm")
-                    with gr.Column(scale=1):
-                        btn_del_low = gr.Button("🗑 Delete", elem_classes="del-btn", size="sm")
+            with gr.Group():
+                with gr.Row(equal_height=True):
+                    with gr.Column(scale=3):
+                        gr.Markdown(f"**{logic.MODEL_VARIANTS['low']['label']}**")
+                        gr.Markdown(f"{logic.MODEL_VARIANTS['low']['desc']}")
+                    stat_low = gr.Textbox(
+                        value=get_model_status_label("low"), 
+                        show_label=False, 
+                        interactive=False,
+                        scale=1
+                    )
+                    btn_dl_low = gr.Button("⬇ Download", size="sm", variant="primary", scale=1)
+                    btn_del_low = gr.Button("🗑 Delete", size="sm", variant="secondary", scale=1)
 
             # --- MEDIUM ---
-            with gr.Group(elem_classes="dl-card"):
-                with gr.Row(elem_classes="dl-row"):
-                    with gr.Column(scale=4):
-                        gr.Markdown(f"<div class='dl-title'>{logic.MODEL_VARIANTS['medium']['label']}</div><div class='dl-desc'>{logic.MODEL_VARIANTS['medium']['desc']}</div>")
-                    with gr.Column(scale=2):
-                        stat_med = gr.Label(value=get_model_status_label("medium"), show_label=False)
-                    with gr.Column(scale=1):
-                        btn_dl_med = gr.Button("⬇ Download", elem_classes="dl-btn", size="sm")
-                    with gr.Column(scale=1):
-                        btn_del_med = gr.Button("🗑 Delete", elem_classes="del-btn", size="sm")
+            with gr.Group():
+                with gr.Row(equal_height=True):
+                    with gr.Column(scale=3):
+                        gr.Markdown(f"**{logic.MODEL_VARIANTS['medium']['label']}**")
+                        gr.Markdown(f"{logic.MODEL_VARIANTS['medium']['desc']}")
+                    stat_med = gr.Textbox(
+                        value=get_model_status_label("medium"), 
+                        show_label=False, 
+                        interactive=False,
+                        scale=1
+                    )
+                    btn_dl_med = gr.Button("⬇ Download", size="sm", variant="primary", scale=1)
+                    btn_del_med = gr.Button("🗑 Delete", size="sm", variant="secondary", scale=1)
 
             # --- HIGH ---
-            with gr.Group(elem_classes="dl-card"):
-                with gr.Row(elem_classes="dl-row"):
-                    with gr.Column(scale=4):
-                        gr.Markdown(f"<div class='dl-title'>{logic.MODEL_VARIANTS['high']['label']}</div><div class='dl-desc'>{logic.MODEL_VARIANTS['high']['desc']}</div>")
-                    with gr.Column(scale=2):
-                        stat_high = gr.Label(value=get_model_status_label("high"), show_label=False)
-                    with gr.Column(scale=1):
-                        btn_dl_high = gr.Button("⬇ Download", elem_classes="dl-btn", size="sm")
-                    with gr.Column(scale=1):
-                        btn_del_high = gr.Button("🗑 Delete", elem_classes="del-btn", size="sm")
+            with gr.Group():
+                with gr.Row(equal_height=True):
+                    with gr.Column(scale=3):
+                        gr.Markdown(f"**{logic.MODEL_VARIANTS['high']['label']}**")
+                        gr.Markdown(f"{logic.MODEL_VARIANTS['high']['desc']}")
+                    stat_high = gr.Textbox(
+                        value=get_model_status_label("high"), 
+                        show_label=False, 
+                        interactive=False,
+                        scale=1
+                    )
+                    btn_dl_high = gr.Button("⬇ Download", size="sm", variant="primary", scale=1)
+                    btn_del_high = gr.Button("🗑 Delete", size="sm", variant="secondary", scale=1)
             
-            dl_log_output = gr.Textbox(label="Download Log", elem_classes="dl_log-box", lines=10)
+            dl_log_output = gr.Textbox(
+                label="Download Log", 
+                lines=8,
+                max_lines=8,
+                autoscroll=True
+            )
 
-            # --- NEW MANUAL SECTION ---
-            with gr.Group(elem_classes="folder-box"):
-                gr.Markdown("### Manual search/download models")
+            # --- MANUAL SECTION ---
+            with gr.Accordion("📖 Manual Model Download", open=False):
                 gr.Markdown("""
-                **Instructions:**
-                1. Open the link below and find the `.gguf` model which you need and download it.
-                2. To get it works download the **main gguf model** and the **mmproj gguf model**.
-                3. Put them to `\\bin\\models` inside main folder.
-                4. After launch program - open **Settings** and select new models path and click - **Save & Reload Config**.
+**Instructions:**
+1. Open the link below and find the `.gguf` model you need.
+2. Download both the **main gguf model** and the **mmproj gguf model**.
+3. Place them in `\\bin\\models` inside the main folder.
+4. Open **Settings** tab, select the model paths, and click **Save & Reload Config**.
 
-                <br>
-                <a href="https://huggingface.co/models?pipeline_tag=image-text-to-text&library=gguf&apps=llama.cpp&sort=trending" target="_blank" style="color: #3b82f6; font-weight: bold; font-size: 1.1em; text-decoration: underline;">
-                    🔗 Click to browse compatible models on HuggingFace
-                </a>
-                """)
+[🔗 Browse compatible models on HuggingFace](https://huggingface.co/models?pipeline_tag=image-text-to-text&library=gguf&apps=llama.cpp&sort=trending)
+""")
 
         # ================= TAB 4: SETTINGS =================
-        with gr.TabItem("Settings", id="tab_settings"):
-            gr.Markdown("### Model Configuration")
+        with gr.TabItem("⚙️ Settings"):
+            gr.Markdown("### ⚙️ Model Configuration")
             gr.Markdown("Point to your local `.gguf` files. Changes require a restart.")
-            with gr.Row():
-                with gr.Column():
-                    m_path = gr.Textbox(label="Vision Model (.gguf)", value=logic.MODEL_PATH)
-                    btn_sel_m = gr.Button("Browse Model")
-                with gr.Column():
-                    mm_path = gr.Textbox(label="MMProj Adapter (.gguf)", value=logic.MMPROJ_PATH)
-                    btn_sel_mm = gr.Button("Browse MMProj")
-            btn_save = gr.Button("Save & Reload Config", variant="primary")
-            cfg_status = gr.HTML("")
+            
+            with gr.Group():
+                with gr.Row():
+                    with gr.Column():
+                        m_path = gr.Textbox(label="Vision Model (.gguf)", value=logic.MODEL_PATH)
+                        btn_sel_m = gr.Button("📂 Browse Model", variant="secondary")
+                    with gr.Column():
+                        mm_path = gr.Textbox(label="MMProj Adapter (.gguf)", value=logic.MMPROJ_PATH)
+                        btn_sel_mm = gr.Button("📂 Browse MMProj", variant="secondary")
+                
+                btn_save = gr.Button("💾 Save & Restart", variant="primary")
+                cfg_status = gr.Markdown("")
 
     # -------------------- WIRING --------------------
     
@@ -473,26 +457,33 @@ with gr.Blocks(css=css, title="Image Sorter") as app:
     # Download Wiring
     status_outputs = [stat_low, stat_med, stat_high]
     
-    # Low
-    btn_dl_low.click(partial(wrapper_run_download, "low"), None, dl_log_output).then(refresh_all_statuses, None, status_outputs)
-    btn_del_low.click(partial(delete_model_ui, "low"), None, [dl_log_output] + status_outputs)
+    def refresh_startup_message():
+        # Reload config to pick up new model paths
+        logic.load_config()
+        return logic.get_startup_message()
     
-    # Medium
-    btn_dl_med.click(partial(wrapper_run_download, "medium"), None, dl_log_output).then(refresh_all_statuses, None, status_outputs)
-    btn_del_med.click(partial(delete_model_ui, "medium"), None, [dl_log_output] + status_outputs)
+    btn_dl_low.click(partial(wrapper_run_download, "low"), None, dl_log_output).then(refresh_all_statuses, None, status_outputs).then(refresh_startup_message, None, log_output)
+    btn_del_low.click(partial(delete_model_ui, "low"), None, [dl_log_output] + status_outputs).then(refresh_startup_message, None, log_output)
+    
+    btn_dl_med.click(partial(wrapper_run_download, "medium"), None, dl_log_output).then(refresh_all_statuses, None, status_outputs).then(refresh_startup_message, None, log_output)
+    btn_del_med.click(partial(delete_model_ui, "medium"), None, [dl_log_output] + status_outputs).then(refresh_startup_message, None, log_output)
 
-    # High
-    btn_dl_high.click(partial(wrapper_run_download, "high"), None, dl_log_output).then(refresh_all_statuses, None, status_outputs)
-    btn_del_high.click(partial(delete_model_ui, "high"), None, [dl_log_output] + status_outputs)
+    btn_dl_high.click(partial(wrapper_run_download, "high"), None, dl_log_output).then(refresh_all_statuses, None, status_outputs).then(refresh_startup_message, None, log_output)
+    btn_del_high.click(partial(delete_model_ui, "high"), None, [dl_log_output] + status_outputs).then(refresh_startup_message, None, log_output)
 
     # Settings Wiring
     btn_sel_m.click(open_file_dialog, m_path, m_path)
     btn_sel_mm.click(open_file_dialog, mm_path, mm_path)
-    def save_cfg_ui(m, mm):
-        m, mm = logic.save_config(m, mm)
-        return m, mm, "<span style='color:green'>✅ Saved.</span>"
-    btn_save.click(save_cfg_ui, [m_path, mm_path], [m_path, mm_path, cfg_status])
+    def save_and_restart(m, mm):
+        # Save config
+        logic.save_config(m, mm)
+        # Restart using subprocess (handles paths with spaces properly on Windows)
+        script_path = os.path.abspath(__file__)
+        subprocess.Popen([sys.executable, script_path], cwd=current_dir)
+        # Exit current process
+        os._exit(0)
+    btn_save.click(save_and_restart, [m_path, mm_path], None)
 
 if __name__ == "__main__":
     roots = [f"{d}:\\" for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{d}:")]
-    app.launch(inbrowser=True, allowed_paths=roots)
+    app.launch(inbrowser=True, allowed_paths=roots, theme=theme)
