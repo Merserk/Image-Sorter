@@ -9,7 +9,7 @@ Here is the updated `README.md` with the corrected license and specific VRAM req
 
 **Smart AI Image Sorter** takes the manual labor out of organizing folders. Instead of dragging and dropping thousands of files, simply tell the AI: *"Put photos of mountains here"* and *"Put memes here"*. It analyzes every image using a state-of-the-art Vision Language Model and sorts them accordingly.
 
-<img width="2819" height="1179" alt="image" src="https://github.com/user-attachments/assets/73099162-6f7d-4d02-8de2-8bddb3250bf8" />
+<img width="2810" height="1277" alt="image" src="https://github.com/user-attachments/assets/6b9be4a8-529f-49d3-83e3-f223fbdb6698" />
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-blue) ![Portable](https://img.shields.io/badge/Type-Portable-green) ![License](https://img.shields.io/badge/License-AGPL--3.0-red)
 
